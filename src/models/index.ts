@@ -1,0 +1,41 @@
+import { DataTypes, Sequelize } from "sequelize";
+import { userSchema } from "./users";
+import { config } from "dotenv";
+import { PostSchema } from "./post";
+config({
+    path: ".env"
+})
+
+export const sequelize = new Sequelize(
+    process.env.db_name as string,
+    process.env.db_username as string,
+    process.env.db_password as string,
+    {
+        host: process.env.db_host as string,
+        port: Number(process.env.db_port),
+        dialect: process.env.db_dialect as any,
+        logging: (process.env.db_logging === "true"),
+    }
+);
+// console.log("🚀 ~ process.env.db_logging:", process.env.db_logging, typeof process.env.db_logging)
+// console.log("🚀 ~ condition:", (process.env.db_logging === "true"))
+
+export const User = sequelize.define("user",userSchema);
+export const Post = sequelize.define("post", PostSchema)
+
+User.hasMany(Post);
+Post.belongsTo(User);
+
+const connectToDatabase = async () => {
+    try {
+        await sequelize.authenticate();
+        await sequelize.sync({ alter: true });
+        console.log(
+            "====> Connection to the database has been established successfully."
+        );
+    } catch (error) {
+        console.error("Unable to connect to the database:", error);
+    }
+};
+
+connectToDatabase();

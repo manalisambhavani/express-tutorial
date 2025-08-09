@@ -9,7 +9,7 @@ const secretKey: string = process.env.JWT_SECRET as string; // Using crypto.rand
 
 export const signToken = (payload: object): string => {
     // console.log("🚀 ~ signToken ~ payload:", payload)
-    console.log("🚀 ~ signToken ~ secretKey:", secretKey)
+    // console.log("🚀 ~ signToken ~ secretKey:", secretKey)
     const token = jwt.sign(payload, secretKey, {
         expiresIn: "1h", // Token expires in 1 hour.
         algorithm: "HS256", // Signing algorithm (HS256 is commonly used for symmetric keys).
@@ -21,6 +21,7 @@ export const signToken = (payload: object): string => {
 export const verifyToken = (token: string): object | null => {
     try {
         const decoded = jwt.verify(token, secretKey);
+        // console.log("🚀 ~ verifyToken ~ decoded:", decoded)
         return decoded as object; // Return the decoded payload.
     } catch (error) {
         console.error("JWT verification failed:", error);
