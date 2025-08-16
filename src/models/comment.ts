@@ -1,18 +1,22 @@
 import { DataTypes } from "sequelize";
 
-export const PostSchema = {
+export const CommentSchema = {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true,
     },
-    title: {
+    message: {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    description: {
-        type: DataTypes.TEXT,
-        allowNull: true,
+    postId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'posts',
+            key: 'id',
+        },
     },
     userId: {
         type: DataTypes.INTEGER,
@@ -23,4 +27,3 @@ export const PostSchema = {
         },
     },
 }
-

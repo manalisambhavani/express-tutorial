@@ -1,7 +1,8 @@
-import { DataTypes, Sequelize } from "sequelize";
-import { userSchema } from "./users";
+import { Sequelize } from "sequelize";
+import { UserSchema } from "./users";
 import { config } from "dotenv";
 import { PostSchema } from "./post";
+import { CommentSchema } from "./comment";
 config({
     path: ".env"
 })
@@ -20,11 +21,17 @@ export const sequelize = new Sequelize(
 // console.log("🚀 ~ process.env.db_logging:", process.env.db_logging, typeof process.env.db_logging)
 // console.log("🚀 ~ condition:", (process.env.db_logging === "true"))
 
-export const User = sequelize.define("user",userSchema);
+export const User = sequelize.define("user",UserSchema);
 export const Post = sequelize.define("post", PostSchema)
+export const Comment = sequelize.define("comment", CommentSchema)
 
 User.hasMany(Post);
 Post.belongsTo(User);
+
+Post.hasMany(Comment);
+Comment.belongsTo(Post);
+Comment.belongsTo(User);
+User.hasMany(Comment);
 
 const connectToDatabase = async () => {
     try {

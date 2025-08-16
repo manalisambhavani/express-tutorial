@@ -1,6 +1,6 @@
 import { DataTypes } from "sequelize";
 
-export const userSchema =  {
+export const UserSchema =  {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -16,3 +16,5 @@ export const userSchema =  {
         allowNull: false,
     },
 }
+
+

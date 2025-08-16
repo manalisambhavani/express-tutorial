@@ -1,4 +1,4 @@
-import { verifyToken } from "../jwt";
+import { verifyToken } from "../utils/jwt";
 import { authMiddleware } from "../middlewares/auth-middleware";
 import { User } from "../models";
 import express, { Request, Response } from "express";

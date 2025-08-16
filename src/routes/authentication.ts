@@ -1,6 +1,8 @@
 import express, { Request, Response } from "express";
 import { User } from "../models";
-import { signToken } from "../jwt";
+import { signToken } from "../utils/jwt";
+import { encrypt } from "../utils/encrypt";
+import { compare } from "bcryptjs";
 export const authRoute = express.Router();
 
 
@@ -24,12 +26,12 @@ authRoute.post("/signup", async (req: Request, res: Response) => {
         return res.status(400).json({ message: "User already exists" });
     }
     // console.log("line 80========");
-    
+
 
     try {
         const newUser = await User.create({
             username: inputUsername,
-            password: inputPassword,
+            password: await encrypt(inputPassword),
         });
         const userData = newUser.toJSON();
         // console.log("🚀 ~ =====newUser:", (newUser as any))
@@ -52,19 +54,26 @@ authRoute.post("/login", async (req: Request, res: Response) => {
     // console.log("🚀 ~ password:", password)
     // console.log("🚀 ~ username:", username)
 
-    const userMatched = await User.findOne({
+    const user = await User.findOne({
         where: {
             username: username,
-            password: password,
         },
     });
     // console.log("🚀 ~ userMatched:", userMatched)
 
-    if (!userMatched) {
-        return res.status(401).json({ message: "Authentication failed" });
+    if (!user) {
+        return res.status(404).json({ message: "User Not Found" });
     }
 
-    const userData = userMatched.toJSON();
+    const userData = user.toJSON();
+    console.log("🚀 ~ userData:", userData)
+
+    const verified = await compare(password, userData.password)
+    console.log("🚀 ~ verified:", verified)
+
+    if (!verified) {
+        return res.status(401).json({ message: "Authentication Failed" });
+    }
 
     const token = signToken({ userId: userData.id });
 
