@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth-middleware';
-import { Post, User } from '../models';
+import { Post, PostReaction, User } from '../models';
 
 export const postRoute = express.Router();
 
@@ -30,10 +30,21 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
         const posts = await Post.findAll({
             include: [{
                 model: User,
-                attributes: ['username']
-            }],
+                attributes: ['username'],
+            },
+            {
+                model: PostReaction,
+                attributes: ['id', 'reactionName'],
+                where: {
+                    userId: (req as any).user.userId
+                },
+                required: false
+            }
+            ],
             order: [['createdAt', 'DESC']] // Order by creation date
         });
+        console.log("🚀 ~ posts:", posts)
+        // console.log("🚀 ~ posts:", posts.map(ele => ele.toJSON()))
 
         return res.json(posts);
     } catch (error) {
@@ -76,7 +87,7 @@ postRoute.delete('/post/:id', authMiddleware, async (req: Request, res: Response
 
     try {
         const post = await Post.findOne({
-            where: { 
+            where: {
                 id: postId,
                 userId: (req as any).user.userId
             }
