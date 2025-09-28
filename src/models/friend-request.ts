@@ -1,6 +1,6 @@
 import { DataTypes } from "sequelize";
 
-export const friendRequestSchema = {
+export const FriendRequestSchema = {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -13,7 +13,6 @@ export const friendRequestSchema = {
             model: 'users',
             key: 'id',
         },
-
     },
     receiverId: {
         type: DataTypes.INTEGER,

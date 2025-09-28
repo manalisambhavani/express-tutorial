@@ -17,11 +17,15 @@ postRoute.post('/post', authMiddleware, async (req: Request, res: Response) => {
 
         return res.status(201).json({
             message: 'Post created successfully',
-            post: newPost
+            data: { post: newPost }
         });
     } catch (error) {
         console.error('Error creating post:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+
+        return res.status(500).json({
+            message: 'Internal server error' + (error as any).message,
+            error
+        });
     }
 });
 
@@ -44,12 +48,19 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
             order: [['createdAt', 'DESC']] // Order by creation date
         });
         console.log("🚀 ~ posts:", posts)
-        // console.log("🚀 ~ posts:", posts.map(ele => ele.toJSON()))
 
-        return res.json(posts);
+        return res.status(200).json({
+            message: 'Posts fetched successfully',
+            data: { posts }
+        });
+
     } catch (error) {
         console.error('Error fetching posts:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+
+        return res.status(500).json({
+            message: 'Internal server error' + (error as any).message,
+            error
+        });
     }
 })
 
@@ -72,13 +83,17 @@ postRoute.put('/post/:id', authMiddleware, async (req: Request, res: Response) =
         post.set({ title, description });
         await post.save();
 
-        return res.json({
+        return res.status(200).json({
             message: 'Post updated successfully',
-            post
+            data: { post }
         });
     } catch (error) {
         console.error('Error updating post:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+
+        return res.status(500).json({
+            message: 'Internal server error' + (error as any).message,
+            error
+        });
     }
 });
 
@@ -97,9 +112,14 @@ postRoute.delete('/post/:id', authMiddleware, async (req: Request, res: Response
         }
 
         await post.destroy();
-        return res.json({ message: 'Post deleted successfully' });
-    } catch (error) {
+        return res.status(200).json({ message: 'Post deleted successfully' });
+    }
+    catch (error) {
         console.error('Error deleting post:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+
+        return res.status(500).json({
+            message: 'Internal server error' + (error as any).message,
+            error
+        });
     }
 });

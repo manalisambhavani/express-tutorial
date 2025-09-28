@@ -2,8 +2,8 @@ import express from "express";
 import { authRoute } from "./routes/authentication";
 import { profileRoute } from "./routes/profile";
 import { postRoute } from "./routes/post";
-import { commentRoute } from "./routes/comments";
-import { reactionRoute } from "./routes/post-reaction";
+import { commentRoute } from "./routes/comment";
+import { postReactionRoute } from "./routes/post-reaction";
 import { CommentReactionRoute } from "./routes/comment-reaction";
 import { friendRequestRoute } from "./routes/friend-request";
 
@@ -16,7 +16,7 @@ app.use(authRoute)
 app.use(profileRoute)
 app.use(postRoute)
 app.use(commentRoute)
-app.use(reactionRoute)
+app.use(postReactionRoute)
 app.use(CommentReactionRoute)
 app.use(friendRequestRoute)
 
