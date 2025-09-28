@@ -27,19 +27,6 @@ export const PostReactionSchema = {
         },
     },
 }
-// const Reaction = sequelize.define('Reaction', {
-//     type: {
-//         type: DataTypes.STRING,
-//         allowNull: false,
-//     }
-// }, {
-//     indexes: [
-//         {
-//             unique: true,
-//             fields: ['UserId', 'PostId']  // Enforces one reaction per user per post
-//         }
-//     ]
-// });
-// export default Reaction;
+
 
 

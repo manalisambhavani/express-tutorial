@@ -1,11 +1,11 @@
 import { Sequelize } from "sequelize";
-import { UserSchema } from "./users";
+import { UserSchema } from "./user";
 import { config } from "dotenv";
 import { PostSchema } from "./post";
 import { CommentSchema } from "./comment";
 import { PostReactionSchema } from "./post-reaction";
 import { CommentReactionSchema } from "./comment-reaction";
-import { friendRequestSchema } from "./friend-request";
+import { FriendRequestSchema } from "./friend-request";
 config({
     path: ".env"
 })
@@ -21,15 +21,13 @@ export const sequelize = new Sequelize(
         logging: (process.env.db_logging === "true"),
     }
 );
-// console.log("🚀 ~ process.env.db_logging:", process.env.db_logging, typeof process.env.db_logging)
-// console.log("🚀 ~ condition:", (process.env.db_logging === "true"))
 
 export const User = sequelize.define("user", UserSchema);
 export const Post = sequelize.define("post", PostSchema)
 export const Comment = sequelize.define("comment", CommentSchema)
 export const PostReaction = sequelize.define("post-reaction", PostReactionSchema)
 export const CommentReaction = sequelize.define("comment-reaction", CommentReactionSchema)
-export const FriendRequest = sequelize.define("friend-request", friendRequestSchema)
+export const FriendRequest = sequelize.define("friend-request", FriendRequestSchema)
 
 User.hasMany(Post);
 Post.belongsTo(User);

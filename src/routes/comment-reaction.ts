@@ -26,13 +26,17 @@ CommentReactionRoute.post('/comment-reaction/:id', authMiddleware, async (req: R
             })
             return res.status(201).json({
                 message: 'Reaction Added successfully',
-                reaction: newReaction
+                data: { newReaction }
             });
         }
 
     } catch (error) {
         console.error('Error creating reaction:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+
+        return res.status(500).json({
+            message: 'Internal server error' + (error as any).message,
+            error
+        });
     }
 })
 
@@ -52,9 +56,15 @@ CommentReactionRoute.delete('/comment-reaction/:id', authMiddleware, async (req:
         }
 
         await reaction.destroy();
-        return res.json({ message: 'Reaction removed successfully' });
+
+        return res.status(201).json({ message: 'Reaction removed successfully' });
+
     } catch (error) {
         console.error('Error removing Reaction:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+
+        return res.status(500).json({
+            message: 'Internal server error' + (error as any).message,
+            error
+        });
     }
 });
