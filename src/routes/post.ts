@@ -1,12 +1,25 @@
 import express, { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth-middleware';
 import { Post, PostReaction, User } from '../models';
+import { PostInputSchema } from '../validations/post.validations';
 
 export const postRoute = express.Router();
 
 postRoute.post('/post', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
-    const { title, description } = req.body;
+    let parsedBody: { title: string; description: string; };
+
+    try {
+        parsedBody = await PostInputSchema.validateAsync(req.body);
+    } catch (error) {
+        console.error("Validation Error:", (error as any).message);
+        return res.status(400).json({
+            message: "Validation Error:" + (error as any).message,
+            error
+        });
+    }
+
+    const { title, description } = parsedBody;
 
     try {
         const newPost = await Post.create({
@@ -32,19 +45,20 @@ postRoute.post('/post', authMiddleware, async (req: Request, res: Response) => {
 postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
     try {
         const posts = await Post.findAll({
+            where: {
+                isActive: true
+            },
             include: [{
                 model: User,
                 attributes: ['username'],
-            },
-            {
+            }, {
                 model: PostReaction,
                 attributes: ['id', 'reactionName'],
                 where: {
                     userId: (req as any).user.userId
                 },
                 required: false
-            }
-            ],
+            }],
             order: [['createdAt', 'DESC']] // Order by creation date
         });
         console.log("🚀 ~ posts:", posts)
@@ -66,13 +80,26 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
 
 postRoute.put('/post/:id', authMiddleware, async (req: Request, res: Response) => {
     const postId = req.params.id;
-    const { title, description } = req.body;
+    let parsedBody: { title: string; description: string; };
+
+    try {
+        parsedBody = await PostInputSchema.validateAsync(req.body);
+    } catch (error) {
+        console.error("Validation Error:", (error as any).message);
+        return res.status(400).json({
+            message: "Validation Error:" + (error as any).message,
+            error
+        });
+    }
+
+    const { title, description } = parsedBody;
 
     try {
         const post = await Post.findOne({
             where: {
                 id: postId,
-                userId: (req as any).user.userId
+                userId: (req as any).user.userId,
+                isActive: true
             }
         });
         if (!post) {
@@ -104,14 +131,16 @@ postRoute.delete('/post/:id', authMiddleware, async (req: Request, res: Response
         const post = await Post.findOne({
             where: {
                 id: postId,
-                userId: (req as any).user.userId
+                userId: (req as any).user.userId,
+                isActive: true
             }
         });
         if (!post) {
             return res.status(404).json({ message: 'Post not found' });
         }
 
-        await post.destroy();
+        post.set({ isActive: false });
+        await post.save();
         return res.status(200).json({ message: 'Post deleted successfully' });
     }
     catch (error) {

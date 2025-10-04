@@ -1,6 +1,6 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, ModelAttributeColumnOptions } from "sequelize";
 
-export const PostSchema = {
+export const PostSchema: { [key: string]: ModelAttributeColumnOptions } = {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -22,5 +22,11 @@ export const PostSchema = {
             key: 'id',
         },
     },
+    isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+    },
 }
+
 

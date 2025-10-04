@@ -26,4 +26,9 @@ export const CommentSchema = {
             key: 'id',
         },
     },
+    isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+    },
 }

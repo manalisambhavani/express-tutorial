@@ -26,6 +26,11 @@ export const PostReactionSchema = {
             key: 'id',
         },
     },
+    isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+    },
 }
 
 

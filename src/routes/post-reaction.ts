@@ -1,21 +1,47 @@
 import express, { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth-middleware';
-import { PostReaction } from '../models';
+import { Post, PostReaction } from '../models';
+import { PostReactionInputSchema } from '../validations/post-reaction.validation';
 
 export const postReactionRoute = express.Router();
 
 postReactionRoute.post('/reaction/:id', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     const postId = req.params.id;
-    const { reactionName } = req.body;
+    console.log("🚀 ~ userId:", userId)
+    console.log("🚀 ~ postId:", postId)
+    let parsedBody: { reactionName: string; };
 
     try {
+        parsedBody = await PostReactionInputSchema.validateAsync(req.body);
+    } catch (error) {
+        console.error("Validation Error:", (error as any).message);
+        return res.status(400).json({
+            message: "Validation Error:" + (error as any).message,
+            error
+        });
+    }
+
+    const { reactionName } = parsedBody;
+
+    try {
+        const post = await Post.findOne({
+            where: {
+                id: postId,
+                isActive: true
+            }
+        });
+        if (!post) {
+            return res.status(404).json({ message: 'Post not found' });
+        }
         const existingReaction = await PostReaction.findOne({
             where: {
                 userId,
-                postId
+                postId,
+                isActive: true
             }
         });
+        console.log("🚀 ~ existingReaction:", existingReaction)
 
         if (!existingReaction) {
             const newReaction = await PostReaction.create({
@@ -24,6 +50,7 @@ postReactionRoute.post('/reaction/:id', authMiddleware, async (req: Request, res
                 userId
             });
             const response = newReaction.toJSON();
+            console.log("🚀 ~ newReaction:", newReaction)
 
             return res.status(201).json({
                 message: 'Reaction Added successfully',
@@ -56,14 +83,17 @@ postReactionRoute.delete('/reaction/:id', authMiddleware, async (req: Request, r
         const reaction = await PostReaction.findOne({
             where: {
                 id: reactionId,
-                userId: (req as any).user.userId
+                userId: (req as any).user.userId,
+                isActive: true
             }
         });
         if (!reaction) {
             return res.status(404).json({ message: 'Reaction does not exist' });
         }
 
-        await reaction.destroy();
+        reaction.set({ isActive: false });
+        await reaction.save();
+
         return res.status(200).json({ message: 'Reaction removed successfully' });
     } catch (error) {
         console.error('Error removing Reaction:', error);

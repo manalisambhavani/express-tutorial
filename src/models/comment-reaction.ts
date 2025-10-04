@@ -22,6 +22,11 @@ export const CommentReactionSchema = {
             key: 'id',
         },
     },
+    isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+    },
 }
 
 
