@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth-middleware';
 import { Post, PostReaction, User } from '../models';
 import { PostInputSchema } from '../validations/post.validations';
+import { Sequelize } from 'sequelize';
 
 export const postRoute = express.Router();
 
@@ -48,17 +49,35 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
             where: {
                 isActive: true
             },
+            attributes: {
+                include: [
+                    // Add total reaction count
+                    [Sequelize.fn('COUNT', Sequelize.col('Reactions.id')), 'reactionCount']
+                ]
+            },
             include: [{
                 model: User,
+                as: 'user',
                 attributes: ['username'],
-            }, {
+            },
+            {
+                // logged in user's reaction
                 model: PostReaction,
+                as: "UserReaction",
                 attributes: ['id', 'reactionName'],
                 where: {
                     userId: (req as any).user.userId
                 },
                 required: false
+            },
+            {
+                // all reactions (only used for count)
+                model: PostReaction,
+                as: "Reactions", // 👈 alias is important
+                attributes: [],
+                required: false
             }],
+            group: ['Post.id', 'User.id', 'UserReaction.id'],
             order: [['createdAt', 'DESC']] // Order by creation date
         });
         console.log("🚀 ~ posts:", posts)
