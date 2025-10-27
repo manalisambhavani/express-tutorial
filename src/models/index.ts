@@ -32,9 +32,9 @@ export const FriendRequest = sequelize.define("friend-request", FriendRequestSch
 User.hasMany(Post, { foreignKey: 'userId', as: 'Post' });
 Post.belongsTo(User, { foreignKey: 'userId', as: 'User' });
 
-Post.hasMany(Comment);
+Post.hasMany(Comment, { foreignKey: 'postId', as: 'Comment' });
 Comment.belongsTo(Post);
-Comment.belongsTo(User);
+Comment.belongsTo(User, { foreignKey: 'userId', as: 'User' });
 User.hasMany(Comment);
 
 User.hasMany(PostReaction);
@@ -43,7 +43,8 @@ Post.hasMany(PostReaction, { foreignKey: 'postId', as: 'Reactions' }); // 👈 f
 Post.hasOne(PostReaction, { foreignKey: 'postId', as: 'UserReaction' }); // 👈 logged in user's reaction
 PostReaction.belongsTo(Post, { foreignKey: 'postId' });
 
-Comment.hasMany(CommentReaction);
+Comment.hasMany(CommentReaction, { foreignKey: 'commentId', as: 'CommentReactions' }); // 👈 for all reactions;
+Comment.hasOne(CommentReaction, { foreignKey: 'commentId', as: 'UserReactionOnComment' }); // 👈 logged in user's reaction
 CommentReaction.belongsTo(Comment);
 
 User.hasMany(FriendRequest, { foreignKey: 'senderId', as: 'sentRequests' });

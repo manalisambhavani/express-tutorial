@@ -3,6 +3,7 @@ import { authMiddleware } from '../middlewares/auth-middleware';
 import { Comment, CommentReaction, Post, User } from '../models';
 import { CreateCommentInputSchema } from '../validations/create-comment-input.validations';
 import { UpdateCommentInputSchema } from '../validations/update-comment-input.validations';
+import { literal } from 'sequelize';
 
 export const commentRoute = express.Router();
 
@@ -42,6 +43,44 @@ commentRoute.post('/comment', authMiddleware, async (req: Request, res: Response
     }
 });
 
+// commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
+//     try {
+//         const postId = req.params.id;
+//         const comment = await Comment.findAll({
+//             where: {
+//                 postId,
+//                 isActive: true
+//             },
+//             include: [{
+//                 model: User,
+//                 attributes: ['username']
+//             },
+//             {
+//                 model: CommentReaction,
+//                 attributes: ['id'],
+//                 where: {
+//                     userId: (req as any).user.userId
+//                 },
+//                 required: false
+//             }
+//             ],
+//             order: [['createdAt', 'DESC']] // Order by creation date
+//         });
+//         return res.status(200).json({
+//             message: 'Comments fetched successfully',
+//             data: { comment }
+//         });
+
+//     } catch (error) {
+//         console.error('Error fetching Comments:', error);
+
+//         return res.status(500).json({
+//             message: 'Internal server error' + (error as any).message,
+//             error
+//         });
+//     }
+// }) 
+
 commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
     try {
         const postId = req.params.id;
@@ -50,12 +89,30 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
                 postId,
                 isActive: true
             },
+            attributes: [
+                'id',
+                'message',
+                [literal(`jsonb_build_object(
+                                'id', "User"."id",
+                                'username', "User"."username"
+                            )`), 'User'],
+                [literal(`jsonb_build_object(
+                                'id', "UserReactionOnComment"."id"
+                            )`), 'UserReactionOnComment'],
+                [literal(`(
+                                SELECT COUNT(*)
+                                    FROM "comment-reactions" AS cr
+                                    WHERE cr."commentId" = "comment"."id" AND cr."isActive" = true
+                            )`), 'count'],
+            ],
             include: [{
                 model: User,
-                attributes: ['username']
+                as: 'User',
+                attributes: ['id', 'username']
             },
             {
                 model: CommentReaction,
+                as: 'UserReactionOnComment',
                 attributes: ['id'],
                 where: {
                     userId: (req as any).user.userId
@@ -63,11 +120,19 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
                 required: false
             }
             ],
-            order: [['createdAt', 'DESC']] // Order by creation date
+            order: [['createdAt', 'DESC']], // Order by creation date
+            raw: true,
+            subQuery: false,
         });
+
+        const response = comment.map((ele) => {
+            const { id, message, User, UserReactionOnComment, count } = ele as any
+            return { id, message, User, UserReactionOnComment, count }
+        })
+
         return res.status(200).json({
             message: 'Comments fetched successfully',
-            data: { comment }
+            data: { response }
         });
 
     } catch (error) {
@@ -79,6 +144,7 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
         });
     }
 })
+
 
 commentRoute.put('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
     const commentId = req.params.id;
