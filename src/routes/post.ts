@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth-middleware';
 import { Post, PostReaction, User } from '../models';
 import { PostInputSchema } from '../validations/post.validations';
-import { Sequelize } from 'sequelize';
+import { literal, Sequelize } from 'sequelize';
 
 export const postRoute = express.Router();
 
@@ -45,46 +45,60 @@ postRoute.post('/post', authMiddleware, async (req: Request, res: Response) => {
 
 postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
     try {
+        const loggedInUserId = (req as any).user.userId
         const posts = await Post.findAll({
-            where: {
-                isActive: true
-            },
-            attributes: {
-                include: [
-                    // Add total reaction count
-                    [Sequelize.fn('COUNT', Sequelize.col('Reactions.id')), 'reactionCount']
-                ]
-            },
-            include: [{
-                model: User,
-                as: 'user',
-                attributes: ['username'],
-            },
-            {
-                // logged in user's reaction
-                model: PostReaction,
-                as: "UserReaction",
-                attributes: ['id', 'reactionName'],
-                where: {
-                    userId: (req as any).user.userId
+            attributes: [
+                'id',
+                'title',
+                'description',
+                [literal(`jsonb_build_object(
+                    'id', "User"."id",
+                    'username', "User"."username"
+                )`), 'User'],
+                [literal(`jsonb_build_object(
+                    'id', "UserReaction"."id",
+                    'ReactionName', "UserReaction"."reactionName"
+                )`), 'UserReaction'],
+                [literal(`(
+                    SELECT jsonb_agg(jsonb_build_object('reactionName', pr2."reactionName", 'count', pr2."cnt"))
+                    FROM (
+                        SELECT "reactionName", COUNT(*) AS "cnt"
+                        FROM "post-reactions" AS pr
+                        WHERE pr."postId" = "post"."id"
+                        GROUP BY pr."reactionName"
+                    ) AS pr2
+                )`), 'count'],
+            ],
+            include: [
+                {
+                    model: User,
+                    as: 'User',
+                    attributes: ["id", "username"]
                 },
-                required: false
+                {
+                    model: PostReaction,
+                    as: 'UserReaction',
+                    required: false,
+                    where: { userId: loggedInUserId },
+                }
+            ],
+            where: {
+                isActive: true,
             },
-            {
-                // all reactions (only used for count)
-                model: PostReaction,
-                as: "Reactions", // 👈 alias is important
-                attributes: [],
-                required: false
-            }],
-            group: ['Post.id', 'User.id', 'UserReaction.id'],
-            order: [['createdAt', 'DESC']] // Order by creation date
+            group: ['post.id', 'User.id', 'UserReaction.id'],
+            order: [['createdAt', 'DESC']],
+            subQuery: false,
+            raw: true
         });
-        console.log("🚀 ~ posts:", posts)
+
+        const response = posts.map((ele) => {
+            const { id, title, description, User, UserReaction, count } = ele as any
+            return { id, title, description, User, UserReaction, count }
+        })
 
         return res.status(200).json({
             message: 'Posts fetched successfully',
-            data: { posts }
+            data: response
         });
 
     } catch (error) {
@@ -96,6 +110,7 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
         });
     }
 })
+
 
 postRoute.put('/post/:id', authMiddleware, async (req: Request, res: Response) => {
     const postId = req.params.id;
