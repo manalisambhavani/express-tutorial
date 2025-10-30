@@ -1,6 +1,6 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, ModelAttributeColumnOptions } from "sequelize";
 
-export const FriendRequestSchema = {
+export const FriendRequestSchema: { [key: string]: ModelAttributeColumnOptions } = {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,

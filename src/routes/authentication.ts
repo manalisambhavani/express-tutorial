@@ -8,21 +8,6 @@ import { LoginInputSchema } from "../validations/login-input.validation";
 export const authRoute = express.Router();
 
 authRoute.post("/signup", async (req: Request, res: Response) => {
-    /**
-     * add validation for username: 
-     *  - Required
-     *  - Min len 8
-     *  - Max len 14
-     *  - small case & _ only allowed
-     *  - space not allowed
-      * add validation for password: 
-     *  - Required
-     *  - Min len 8
-     *  - Max len 18
-     *  - 1 Upper case 1 small case + 1 special char only allowed
-     */
-
-    // add validation for these fields and add columns also: firstname, lastname, email and mobileno
 
     let parsedBody: { username: string; password: string; firstName: string; lastName: string; email: string; mobileNo: string };
 
@@ -57,10 +42,7 @@ authRoute.post("/signup", async (req: Request, res: Response) => {
         const newUser = await User.create({
             username: inputUsername,
             password: await encrypt(inputPassword),
-            firstName: firstName,
-            lastName: lastName,
-            email: email,
-            mobileNo: mobileNo
+            firstName, lastName, email, mobileNo
         });
         const userData = newUser.toJSON();
 

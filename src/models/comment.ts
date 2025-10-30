@@ -1,6 +1,6 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, ModelAttributeColumnOptions } from "sequelize";
 
-export const CommentSchema = {
+export const CommentSchema: { [key: string]: ModelAttributeColumnOptions } = {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
