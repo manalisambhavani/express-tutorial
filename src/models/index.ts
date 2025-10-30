@@ -53,8 +53,6 @@ User.hasMany(FriendRequest, { foreignKey: 'receiverId', as: 'receivedRequests' }
 FriendRequest.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
 FriendRequest.belongsTo(User, { foreignKey: 'receiverId', as: 'receiver' });
 
-// console.log(Post.associations);
-
 
 const connectToDatabase = async () => {
     try {

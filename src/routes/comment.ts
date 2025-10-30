@@ -43,44 +43,6 @@ commentRoute.post('/comment', authMiddleware, async (req: Request, res: Response
     }
 });
 
-// commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
-//     try {
-//         const postId = req.params.id;
-//         const comment = await Comment.findAll({
-//             where: {
-//                 postId,
-//                 isActive: true
-//             },
-//             include: [{
-//                 model: User,
-//                 attributes: ['username']
-//             },
-//             {
-//                 model: CommentReaction,
-//                 attributes: ['id'],
-//                 where: {
-//                     userId: (req as any).user.userId
-//                 },
-//                 required: false
-//             }
-//             ],
-//             order: [['createdAt', 'DESC']] // Order by creation date
-//         });
-//         return res.status(200).json({
-//             message: 'Comments fetched successfully',
-//             data: { comment }
-//         });
-
-//     } catch (error) {
-//         console.error('Error fetching Comments:', error);
-
-//         return res.status(500).json({
-//             message: 'Internal server error' + (error as any).message,
-//             error
-//         });
-//     }
-// }) 
-
 commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
     try {
         const postId = req.params.id;
