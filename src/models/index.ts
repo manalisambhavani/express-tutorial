@@ -29,20 +29,22 @@ export const PostReaction = sequelize.define("post-reaction", PostReactionSchema
 export const CommentReaction = sequelize.define("comment-reaction", CommentReactionSchema)
 export const FriendRequest = sequelize.define("friend-request", FriendRequestSchema)
 
-User.hasMany(Post);
-Post.belongsTo(User);
+User.hasMany(Post, { foreignKey: 'userId', as: 'Post' });
+Post.belongsTo(User, { foreignKey: 'userId', as: 'User' });
 
-Post.hasMany(Comment);
+Post.hasMany(Comment, { foreignKey: 'postId', as: 'Comment' });
 Comment.belongsTo(Post);
-Comment.belongsTo(User);
+Comment.belongsTo(User, { foreignKey: 'userId', as: 'User' });
 User.hasMany(Comment);
 
 User.hasMany(PostReaction);
 PostReaction.belongsTo(User);
-Post.hasMany(PostReaction);
-PostReaction.belongsTo(Post);
+Post.hasMany(PostReaction, { foreignKey: 'postId', as: 'Reactions' }); // 👈 for all reactions
+Post.hasOne(PostReaction, { foreignKey: 'postId', as: 'UserReaction' }); // 👈 logged in user's reaction
+PostReaction.belongsTo(Post, { foreignKey: 'postId' });
 
-Comment.hasMany(CommentReaction);
+Comment.hasMany(CommentReaction, { foreignKey: 'commentId', as: 'CommentReactions' }); // 👈 for all reactions;
+Comment.hasOne(CommentReaction, { foreignKey: 'commentId', as: 'UserReactionOnComment' }); // 👈 logged in user's reaction
 CommentReaction.belongsTo(Comment);
 
 User.hasMany(FriendRequest, { foreignKey: 'senderId', as: 'sentRequests' });
@@ -50,7 +52,6 @@ User.hasMany(FriendRequest, { foreignKey: 'receiverId', as: 'receivedRequests' }
 
 FriendRequest.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
 FriendRequest.belongsTo(User, { foreignKey: 'receiverId', as: 'receiver' });
-
 
 
 const connectToDatabase = async () => {

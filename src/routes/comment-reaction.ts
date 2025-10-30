@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth-middleware';
 import { Comment, CommentReaction, PostReaction } from '../models';
+import { commentRoute } from './comment';
 
 export const CommentReactionRoute = express.Router();
 
@@ -49,6 +50,58 @@ CommentReactionRoute.post('/comment-reaction/:id', authMiddleware, async (req: R
         });
     }
 })
+
+// list comment Reactions
+CommentReactionRoute.get('/list-comment-reaction/:id', authMiddleware, async (req: Request, res: Response) => {
+    const commentId = req.params.id;
+    console.log("🚀 ~ commentId:", commentId)
+
+    try {
+        const comment = await Comment.findOne({
+            where: {
+                id: commentId,
+                isActive: true
+            }
+        });
+        if (!comment) {
+            return res.status(404).json({ message: 'Comment not found' });
+        }
+
+        const Reaction = await CommentReaction.findAll({
+            where: {
+                commentId,
+                isActive: true
+            }
+        });
+        console.log("🚀 ~ Reaction:", Reaction)
+
+        if (!Reaction) {
+            return res.status(404).json({ message: 'Reaction does not exist' });
+        }
+
+        const response = Reaction.map((ele) => {
+            const { id, userId, commentId } = ele.toJSON()
+            return { id, userId, commentId }
+        })
+        // console.log("🚀 ~ response:", response)
+
+        return res.status(200).json({
+            message: 'Reactions fetched successfully',
+            data: {
+                response
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching Reactions:', error);
+
+        return res.status(500).json({
+            message: 'Internal server error' + (error as any).message,
+            error
+        });
+    }
+
+});
 
 CommentReactionRoute.delete('/comment-reaction/:id', authMiddleware, async (req: Request, res: Response) => {
     const reactionId = req.params.id;
