@@ -1,6 +1,6 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, ModelAttributeColumnOptions } from "sequelize";
 
-export const CommentReactionSchema = {
+export const CommentReactionSchema: { [key: string]: ModelAttributeColumnOptions } = {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -21,6 +21,11 @@ export const CommentReactionSchema = {
             model: 'users',
             key: 'id',
         },
+    },
+    isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
     },
 }
 

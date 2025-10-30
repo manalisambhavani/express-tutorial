@@ -1,13 +1,26 @@
 import express, { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth-middleware';
 import { Comment, CommentReaction, Post, User } from '../models';
+import { CreateCommentInputSchema } from '../validations/create-comment-input.validations';
+import { UpdateCommentInputSchema } from '../validations/update-comment-input.validations';
 
 export const commentRoute = express.Router();
 
 commentRoute.post('/comment', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
-    const { postId, message } = req.body;
+    let parsedBody: { message: string; postId: number };
 
+    try {
+        parsedBody = await CreateCommentInputSchema.validateAsync(req.body);
+    } catch (error) {
+        console.error("Validation Error:", (error as any).message);
+        return res.status(400).json({
+            message: "Validation Error:" + (error as any).message,
+            error
+        });
+    }
+
+    const { message, postId } = parsedBody;
     try {
         const newComment = await Comment.create({
             message,
@@ -33,7 +46,10 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
     try {
         const postId = req.params.id;
         const comment = await Comment.findAll({
-            where: { postId },
+            where: {
+                postId,
+                isActive: true
+            },
             include: [{
                 model: User,
                 attributes: ['username']
@@ -67,13 +83,27 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
 commentRoute.put('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
     const commentId = req.params.id;
     const loggedInUserId = (req as any).user.userId;
-    const { message } = req.body;
+
+    let parsedBody: { message: string; };
+
+    try {
+        parsedBody = await UpdateCommentInputSchema.validateAsync(req.body);
+    } catch (error) {
+        console.error("Validation Error:", (error as any).message);
+        return res.status(400).json({
+            message: "Validation Error:" + (error as any).message,
+            error
+        });
+    }
+
+    const { message } = parsedBody;
 
     try {
         const comment = await Comment.findOne({
             where: {
                 id: commentId,
-                userId: loggedInUserId // Ensures ownership
+                userId: loggedInUserId, // Ensures ownership
+                isActive: true
             },
             include: [{
                 model: User,
@@ -113,14 +143,16 @@ commentRoute.delete('/comment/:id', authMiddleware, async (req: Request, res: Re
         const comment = await Comment.findOne({
             where: {
                 id: commentId,
-                userId: loggedInUserId
+                userId: loggedInUserId,
+                isActive: true
             }
         });
         if (!comment) {
             return res.status(404).json({ message: 'Comment not found' });
         }
 
-        await comment.destroy();
+        comment.set({ isActive: false });
+        await comment.save();
         return res.status(200).json({ message: 'Comment deleted successfully' });
     } catch (error) {
         console.error('Error deleting comment:', error);

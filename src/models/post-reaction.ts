@@ -1,6 +1,6 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, ModelAttributeColumnOptions } from "sequelize";
 
-export const PostReactionSchema = {
+export const PostReactionSchema: { [key: string]: ModelAttributeColumnOptions } = {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -25,6 +25,11 @@ export const PostReactionSchema = {
             model: 'users',
             key: 'id',
         },
+    },
+    isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
     },
 }
 

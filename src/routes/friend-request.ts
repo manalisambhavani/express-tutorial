@@ -182,7 +182,7 @@ friendRequestRoute.patch('/friend-request/:id', authMiddleware, async (req: Requ
     }
 });
 
-// Retrive the Friends
+// Retrieve the Friends
 friendRequestRoute.get('/friends', authMiddleware, async (req: Request, res: Response) => {
     const loggedInUserId = (req as any).user.userId;
     console.log("🚀 ~ loggedInUserId:", loggedInUserId)
@@ -226,7 +226,6 @@ friendRequestRoute.get('/friends', authMiddleware, async (req: Request, res: Res
 
         })
 
-        // console.log("🚀 ~ friends:", friends)
         return res.status(200).json({
             message: `Friends`,
             data: { friends: friendsRes }
@@ -253,31 +252,20 @@ friendRequestRoute.put('/unfriend/:id', authMiddleware, async (req: Request, res
 
         const friendRequest = await FriendRequest.findOne({
             where: {
-                status: "accepted"
+                status: "accepted",
+                [Op.or]: [
+                    {
+                        senderId: loggedInUserId,
+                        receiverId: requestId
+                    },
+                    {
+                        senderId: requestId,
+                        receiverId: loggedInUserId
+                    }
+                ]
             }
         });
         console.log("🚀 ~ friendRequest:", friendRequest)
-
-
-        if (!friendRequest) {
-            return res.status(404).json({
-                message: "Friend Request Not Found",
-                error: "Invalid Request"
-            });
-        }
-
-        console.log("Sender ID", friendRequest.get("senderId"));
-
-        if (loggedInUserId == friendRequest.get("senderId") || loggedInUserId == friendRequest.get("receiverId")) {
-            await friendRequest.update({ status: 'declined' });
-            await friendRequest.destroy();
-        }
-
-
-        return res.status(200).json({
-            message: "Friend Removed Successfully"
-        })
-
 
     } catch (error) {
         console.error('Failed to Fetch available requests:', error);

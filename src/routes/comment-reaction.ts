@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth-middleware';
-import { CommentReaction, PostReaction } from '../models';
+import { Comment, CommentReaction, PostReaction } from '../models';
 
 export const CommentReactionRoute = express.Router();
 
@@ -12,10 +12,20 @@ CommentReactionRoute.post('/comment-reaction/:id', authMiddleware, async (req: R
     console.log("🚀 ~ commentId:", commentId)
 
     try {
+        const comment = await Comment.findOne({
+            where: {
+                id: commentId,
+                isActive: true
+            }
+        });
+        if (!comment) {
+            return res.status(404).json({ message: 'Comment not found' });
+        }
         const existingReaction = await CommentReaction.findOne({
             where: {
                 userId,
-                commentId
+                commentId,
+                isActive: true
             }
         });
 
@@ -48,14 +58,16 @@ CommentReactionRoute.delete('/comment-reaction/:id', authMiddleware, async (req:
         const reaction = await CommentReaction.findOne({
             where: {
                 id: reactionId,
-                userId: (req as any).user.userId
+                userId: (req as any).user.userId,
+                isActive: true
             }
         });
         if (!reaction) {
             return res.status(404).json({ message: 'Reaction does not exist' });
         }
 
-        await reaction.destroy();
+        reaction.set({ isActive: false });
+        await reaction.save();
 
         return res.status(201).json({ message: 'Reaction removed successfully' });
 

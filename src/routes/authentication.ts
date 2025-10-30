@@ -3,11 +3,31 @@ import { User } from "../models";
 import { signToken } from "../utils/jwt";
 import { encrypt } from "../utils/encrypt";
 import { compare } from "bcryptjs";
+import { SignupInputSchema } from "../validations/signup-input.validations";
+import { LoginInputSchema } from "../validations/login-input.validation";
 export const authRoute = express.Router();
 
 authRoute.post("/signup", async (req: Request, res: Response) => {
-    const inputUsername = req.body.username;
-    const inputPassword = req.body.password;
+
+    let parsedBody: { username: string; password: string; firstName: string; lastName: string; email: string; mobileNo: string };
+
+    try {
+        parsedBody = await SignupInputSchema.validateAsync(req.body);
+    } catch (error) {
+        console.error("Validation Error:", (error as any).message);
+        return res.status(400).json({
+            message: "Validation Error:" + (error as any).message,
+            error
+        });
+    }
+
+    const inputUsername = parsedBody.username;
+    const inputPassword = parsedBody.password;
+    const firstName = parsedBody.firstName;
+    const lastName = parsedBody.lastName;
+    const email = parsedBody.email;
+    const mobileNo = parsedBody.mobileNo;
+
 
     const existingUser = await User.findOne({
         where: {
@@ -22,6 +42,7 @@ authRoute.post("/signup", async (req: Request, res: Response) => {
         const newUser = await User.create({
             username: inputUsername,
             password: await encrypt(inputPassword),
+            firstName, lastName, email, mobileNo
         });
         const userData = newUser.toJSON();
 
@@ -45,9 +66,21 @@ authRoute.post("/signup", async (req: Request, res: Response) => {
 // Login API
 authRoute.post("/login", async (req: Request, res: Response) => {
 
+    let parsedBody: { username: string; password: string; };
+
+    try {
+        parsedBody = await LoginInputSchema.validateAsync(req.body);
+    } catch (error) {
+        console.error("Validation Error:", (error as any).message);
+        return res.status(400).json({
+            message: "Validation Error:" + (error as any).message,
+            error
+        });
+    }
+
     try {
 
-        const { username, password } = req.body;
+        const { username, password } = parsedBody;
 
 
         const user = await User.findOne({
