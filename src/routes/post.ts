@@ -46,6 +46,14 @@ postRoute.post('/post', authMiddleware, async (req: Request, res: Response) => {
 postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
     try {
         const loggedInUserId = (req as any).user.userId
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const offset = (page - 1) * limit;
+
+        const totalItems = await Post.count({
+            where: { isActive: true }
+        });
+
         const posts = await Post.findAll({
             attributes: [
                 'id',
@@ -87,9 +95,13 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
             },
             group: ['post.id', 'User.id', 'UserReaction.id'],
             order: [['createdAt', 'DESC']],
+            limit,
+            offset,
             subQuery: false,
             raw: true
         });
+
+        const totalPages = Math.ceil(totalItems / limit);
 
         const response = posts.map((ele) => {
             const { id, title, description, User, UserReaction, count } = ele as any
@@ -98,7 +110,16 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
 
         return res.status(200).json({
             message: 'Posts fetched successfully',
-            data: response
+            data: response,
+            pagination: {
+                totalItems,
+                totalPages,
+                currentPage: page,
+                pageSize: limit,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1
+            }
+
         });
 
     } catch (error) {
@@ -110,7 +131,6 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
         });
     }
 })
-
 
 postRoute.put('/post/:id', authMiddleware, async (req: Request, res: Response) => {
     const postId = req.params.id;

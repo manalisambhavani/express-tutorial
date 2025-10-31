@@ -82,7 +82,6 @@ authRoute.post("/login", async (req: Request, res: Response) => {
 
         const { username, password } = parsedBody;
 
-
         const user = await User.findOne({
             where: {
                 username: username,
