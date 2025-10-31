@@ -18,11 +18,11 @@ profileRoute.get("/profile", authMiddleware, async (req: Request, res: Response)
 
         return res.status(200).json({
             message: 'Profile fetched successfully',
-            data: { username: userData.username }
+            data: { username: userData.username },
         });
-
     } catch (error) {
         console.error('Error fetching Profile:', error);
+
 
         return res.status(500).json({
             message: 'Internal server error' + (error as any).message,

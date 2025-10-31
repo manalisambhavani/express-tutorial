@@ -46,6 +46,16 @@ commentRoute.post('/comment', authMiddleware, async (req: Request, res: Response
 commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
     try {
         const postId = req.params.id;
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const offset = (page - 1) * limit;
+
+        const totalItems = await Comment.count({
+            where: {
+                postId,
+                isActive: true
+            }
+        });
         const comment = await Comment.findAll({
             where: {
                 postId,
@@ -83,9 +93,14 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
             }
             ],
             order: [['createdAt', 'DESC']], // Order by creation date
+            limit,
+            offset,
             raw: true,
             subQuery: false,
+
         });
+
+        const totalPages = Math.ceil(totalItems / limit);
 
         const response = comment.map((ele) => {
             const { id, message, User, UserReactionOnComment, count } = ele as any
@@ -94,7 +109,15 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
 
         return res.status(200).json({
             message: 'Comments fetched successfully',
-            data: { response }
+            data: response,
+            pagination: {
+                totalItems,
+                totalPages,
+                currentPage: page,
+                pageSize: limit,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1
+            }
         });
 
     } catch (error) {
@@ -135,6 +158,7 @@ commentRoute.put('/comment/:id', authMiddleware, async (req: Request, res: Respo
             },
             include: [{
                 model: User,
+                as: 'User',
                 attributes: ['username']
             }]
 
