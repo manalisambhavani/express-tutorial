@@ -8,8 +8,6 @@ export const postReactionRoute = express.Router();
 postReactionRoute.post('/reaction/:id', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     const postId = req.params.id;
-    console.log("🚀 ~ userId:", userId)
-    console.log("🚀 ~ postId:", postId)
     let parsedBody: { reactionName: string; };
 
     try {
@@ -41,7 +39,6 @@ postReactionRoute.post('/reaction/:id', authMiddleware, async (req: Request, res
                 isActive: true
             }
         });
-        console.log("🚀 ~ existingReaction:", existingReaction)
 
         if (!existingReaction) {
             const newReaction = await PostReaction.create({
@@ -50,7 +47,6 @@ postReactionRoute.post('/reaction/:id', authMiddleware, async (req: Request, res
                 userId
             });
             const response = newReaction.toJSON();
-            console.log("🚀 ~ newReaction:", newReaction)
 
             return res.status(201).json({
                 message: 'Reaction Added successfully',
@@ -78,7 +74,6 @@ postReactionRoute.post('/reaction/:id', authMiddleware, async (req: Request, res
 //list post-reactions 
 postReactionRoute.get('/list-reaction/:id', authMiddleware, async (req: Request, res: Response) => {
     const postId = req.params.id;
-    console.log("🚀 ~ postId:", postId)
 
     try {
         const post = await Post.findOne({
@@ -107,13 +102,10 @@ postReactionRoute.get('/list-reaction/:id', authMiddleware, async (req: Request,
             const { userId, postId, reactionName } = ele.toJSON()
             return { userId, postId, reactionName }
         })
-        // console.log("🚀 ~ response:", response)
 
         return res.status(200).json({
             message: 'Reactions fetched successfully',
-            data: {
-                response
-            }
+            data: response
         });
 
     } catch (error) {
@@ -129,7 +121,6 @@ postReactionRoute.get('/list-reaction/:id', authMiddleware, async (req: Request,
 
 postReactionRoute.delete('/reaction/:id', authMiddleware, async (req: Request, res: Response) => {
     const reactionId = req.params.id;
-    console.log("🚀 ~ reactionId:", reactionId)
 
     try {
         const reaction = await PostReaction.findOne({

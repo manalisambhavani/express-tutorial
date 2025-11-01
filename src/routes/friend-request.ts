@@ -1,18 +1,42 @@
-import express, { request, Request, response, Response } from 'express';
+import express, { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth-middleware';
 import { FriendRequest, User } from '../models';
-import { json, Op } from 'sequelize';
+import { Op } from 'sequelize';
 
 export const friendRequestRoute = express.Router();
 
 friendRequestRoute.get('/list-users', authMiddleware, async (req: Request, res: Response) => {
     try {
-        const Users = await User.findAll();
+        const currentUserId = (req as any).user.userId;
 
-        return res.status(200).json({
-            message: 'Users fetched successfully',
-            data: { Users }
+        // find all users the current user already sent friend requests to
+        const sentRequests = await FriendRequest.findAll({
+            where: {
+                [Op.or]: [
+                    { senderId: currentUserId },
+                    { receiverId: currentUserId },
+                ]
+            },
+            attributes: ['receiverId', 'senderId'],
         });
+
+        const excludedIds = []
+        sentRequests.forEach((r) => { 
+            excludedIds.push(r.toJSON().receiverId);
+            excludedIds.push(r.toJSON().senderId);
+        });
+        excludedIds.push(currentUserId); // also exclude self
+
+        const users = await User.findAll({
+            where: {
+                id: {
+                    [Op.notIn]: excludedIds,
+                },
+            },
+            attributes: ['id', 'username', 'email'], // limit columns if needed
+        });
+
+        res.json({ data: users });
 
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -33,7 +57,6 @@ friendRequestRoute.get('/user/:id', authMiddleware, async (req: Request, res: Re
                 id: userId,
             }
         });
-        console.log("🚀 ~ UserProfile:", UserProfile)
         if (!UserProfile) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -76,7 +99,6 @@ friendRequestRoute.post('/send-friend-request/:id', authMiddleware, async (req: 
                 status: 'pending'
             }
         });
-        console.log("🚀 ~ existingRequest:", existingRequest)
 
         if (existingRequest) {
             return res.status(400).json({ message: 'Friend request already exist.' });
@@ -105,18 +127,23 @@ friendRequestRoute.post('/send-friend-request/:id', authMiddleware, async (req: 
 
 friendRequestRoute.get('/friend-request', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
-    console.log("🚀 ~ userId:", userId)
     try {
         const receivedRequests = await FriendRequest.findAll({
             where: {
                 receiverId: userId,
                 status: 'pending'
-            }
+            },
+            include: [
+                {
+                    model: User,
+                    as: 'sender'
+                }
+            ]
         });
 
         res.status(200).json({
             message: 'Pending friend request fetched successfully',
-            data: { receivedRequests }
+            data: receivedRequests
         });
 
     } catch (error) {
@@ -168,7 +195,7 @@ friendRequestRoute.patch('/friend-request/:id', authMiddleware, async (req: Requ
 
         return res.status(200).json({
             message: `Friend request ${status}.`,
-            data: { friendRequest }
+            data: friendRequest
         });
 
 
@@ -185,7 +212,6 @@ friendRequestRoute.patch('/friend-request/:id', authMiddleware, async (req: Requ
 // Retrieve the Friends
 friendRequestRoute.get('/friends', authMiddleware, async (req: Request, res: Response) => {
     const loggedInUserId = (req as any).user.userId;
-    console.log("🚀 ~ loggedInUserId:", loggedInUserId)
 
     try {
         const friends = await FriendRequest.findAll({
@@ -208,7 +234,6 @@ friendRequestRoute.get('/friends', authMiddleware, async (req: Request, res: Res
 
         const friendsRes = friends.map((ele) => {
             const parsedEle = ele.toJSON()
-            console.log("🚀 ~ parsedEle:", parsedEle)
 
             if (parsedEle.senderId !== loggedInUserId) {
                 return {
@@ -228,7 +253,7 @@ friendRequestRoute.get('/friends', authMiddleware, async (req: Request, res: Res
 
         return res.status(200).json({
             message: `Friends`,
-            data: { friends: friendsRes }
+            data: friendsRes
         });
     } catch (error) {
         console.error('Failed to Fetch available requests:', error);
@@ -245,8 +270,6 @@ friendRequestRoute.put('/unfriend/:id', authMiddleware, async (req: Request, res
     const loggedInUserId = (req as any).user.userId;
     const requestId = req.params.id;
 
-    console.log("🚀 ~ requestId:", requestId)
-    console.log("🚀 ~ loggedInUserId:", loggedInUserId)
 
     try {
 
@@ -265,7 +288,6 @@ friendRequestRoute.put('/unfriend/:id', authMiddleware, async (req: Request, res
                 ]
             }
         });
-        console.log("🚀 ~ friendRequest:", friendRequest)
 
     } catch (error) {
         console.error('Failed to Fetch available requests:', error);

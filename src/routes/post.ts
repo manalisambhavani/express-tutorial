@@ -31,7 +31,7 @@ postRoute.post('/post', authMiddleware, async (req: Request, res: Response) => {
 
         return res.status(201).json({
             message: 'Post created successfully',
-            data: { post: newPost }
+            data: newPost
         });
     } catch (error) {
         console.error('Error creating post:', error);
@@ -62,17 +62,17 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
                 [literal(`jsonb_build_object(
                     'id', "User"."id",
                     'username', "User"."username"
-                )`), 'User'],
+                )`), 'user'],
                 [literal(`jsonb_build_object(
                     'id', "UserReaction"."id",
-                    'ReactionName', "UserReaction"."reactionName"
-                )`), 'UserReaction'],
+                    'reactionName', "UserReaction"."reactionName"
+                )`), 'userReaction'],
                 [literal(`(
                     SELECT jsonb_agg(jsonb_build_object('reactionName', pr2."reactionName", 'count', pr2."cnt"))
                     FROM (
                         SELECT "reactionName", COUNT(*) AS "cnt"
                         FROM "post-reactions" AS pr
-                        WHERE pr."postId" = "post"."id"
+                        WHERE pr."postId" = "post"."id" AND pr."isActive" = true
                         GROUP BY pr."reactionName"
                     ) AS pr2
                 )`), 'count'],
@@ -87,7 +87,7 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
                     model: PostReaction,
                     as: 'UserReaction',
                     required: false,
-                    where: { userId: loggedInUserId },
+                    where: { userId: loggedInUserId, isActive: true },
                 }
             ],
             where: {
@@ -104,8 +104,8 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
         const totalPages = Math.ceil(totalItems / limit);
 
         const response = posts.map((ele) => {
-            const { id, title, description, User, UserReaction, count } = ele as any
-            return { id, title, description, User, UserReaction, count }
+            const { id, title, description, user, userReaction, count } = ele as any
+            return { id, title, description, user, userReaction, count }
         })
 
         return res.status(200).json({
@@ -166,7 +166,7 @@ postRoute.put('/post/:id', authMiddleware, async (req: Request, res: Response) =
 
         return res.status(200).json({
             message: 'Post updated successfully',
-            data: { post }
+            data: post
         });
     } catch (error) {
         console.error('Error updating post:', error);
@@ -206,3 +206,69 @@ postRoute.delete('/post/:id', authMiddleware, async (req: Request, res: Response
         });
     }
 });
+
+postRoute.get('/post/:id', authMiddleware, async (req: Request, res: Response) => {
+    try {
+        const loggedInUserId = (req as any).user.userId;
+        const postId = req.params.id;
+
+        const post = await Post.findOne({
+            attributes: [
+                'id',
+                'title',
+                'description',
+                [literal(`jsonb_build_object(
+                    'id', "User"."id",
+                    'username', "User"."username"
+                )`), 'user'],
+                [literal(`jsonb_build_object(
+                    'id', "UserReaction"."id",
+                    'reactionName', "UserReaction"."reactionName"
+                )`), 'userReaction'],
+                [literal(`(
+                    SELECT jsonb_agg(jsonb_build_object('reactionName', pr2."reactionName", 'count', pr2."cnt"))
+                    FROM (
+                    SELECT "reactionName", COUNT(*) AS "cnt"
+                    FROM "post-reactions" AS pr
+                    WHERE pr."postId" = "post"."id" AND pr."isActive" = true
+                    GROUP BY pr."reactionName"
+                    ) AS pr2
+                )`), 'count'],
+            ],
+            include: [
+                {
+                    model: User,
+                    as: 'User',
+                    attributes: ['id', 'username'],
+                },
+                {
+                    model: PostReaction,
+                    as: 'UserReaction',
+                    required: false,
+                    where: { userId: loggedInUserId, isActive: true },
+                },
+            ],
+            where: { id: postId, isActive: true },
+            group: ['post.id', 'User.id', 'UserReaction.id'],
+            subQuery: false,
+            raw: true,
+        });
+
+        if (!post) {
+            return res.status(404).json({ message: 'Post not found' });
+        }
+
+        const { id, title, description, user, userReaction, count } = post as any;
+        return res.status(200).json({
+            message: 'Post fetched successfully',
+            data: { id, title, description, user, userReaction, count },
+        });
+    } catch (error) {
+        console.error('Error fetching single post:', error);
+        return res.status(500).json({
+            message: 'Internal server error ' + (error as any).message,
+            error,
+        });
+    }
+});
+  

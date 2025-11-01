@@ -1,16 +1,12 @@
 import express, { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth-middleware';
-import { Comment, CommentReaction, PostReaction } from '../models';
-import { commentRoute } from './comment';
+import { Comment, CommentReaction } from '../models';
 
 export const CommentReactionRoute = express.Router();
 
 CommentReactionRoute.post('/comment-reaction/:id', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     const commentId = req.params.id;
-
-    console.log("🚀 ~ userId:", userId)
-    console.log("🚀 ~ commentId:", commentId)
 
     try {
         const comment = await Comment.findOne({
@@ -37,7 +33,7 @@ CommentReactionRoute.post('/comment-reaction/:id', authMiddleware, async (req: R
             })
             return res.status(201).json({
                 message: 'Reaction Added successfully',
-                data: { newReaction }
+                data: newReaction
             });
         }
 
@@ -52,9 +48,8 @@ CommentReactionRoute.post('/comment-reaction/:id', authMiddleware, async (req: R
 })
 
 // list comment Reactions
-CommentReactionRoute.get('/list-comment-reaction/:id', authMiddleware, async (req: Request, res: Response) => {
+CommentReactionRoute.get('/comment-reaction/:id', authMiddleware, async (req: Request, res: Response) => {
     const commentId = req.params.id;
-    console.log("🚀 ~ commentId:", commentId)
 
     try {
         const comment = await Comment.findOne({
@@ -73,7 +68,6 @@ CommentReactionRoute.get('/list-comment-reaction/:id', authMiddleware, async (re
                 isActive: true
             }
         });
-        console.log("🚀 ~ Reaction:", Reaction)
 
         if (!Reaction) {
             return res.status(404).json({ message: 'Reaction does not exist' });
@@ -83,13 +77,10 @@ CommentReactionRoute.get('/list-comment-reaction/:id', authMiddleware, async (re
             const { id, userId, commentId } = ele.toJSON()
             return { id, userId, commentId }
         })
-        // console.log("🚀 ~ response:", response)
 
         return res.status(200).json({
             message: 'Reactions fetched successfully',
-            data: {
-                response
-            }
+            data: response
         });
 
     } catch (error) {
@@ -105,7 +96,6 @@ CommentReactionRoute.get('/list-comment-reaction/:id', authMiddleware, async (re
 
 CommentReactionRoute.delete('/comment-reaction/:id', authMiddleware, async (req: Request, res: Response) => {
     const reactionId = req.params.id;
-    console.log("🚀 ~ reactionId:", reactionId)
 
     try {
         const reaction = await CommentReaction.findOne({

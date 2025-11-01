@@ -31,7 +31,7 @@ commentRoute.post('/comment', authMiddleware, async (req: Request, res: Response
 
         return res.status(201).json({
             message: 'Comment Added successfully',
-            data: { newComment }
+            data: newComment
         });
     } catch (error) {
         console.error('Error Adding Comment:', error);
@@ -43,7 +43,7 @@ commentRoute.post('/comment', authMiddleware, async (req: Request, res: Response
     }
 });
 
-commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
+commentRoute.get('/post/:id/comment', authMiddleware, async (req: Request, res: Response) => {
     try {
         const postId = req.params.id;
         const page = parseInt(req.query.page as string) || 1;
@@ -67,10 +67,10 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
                 [literal(`jsonb_build_object(
                                 'id', "User"."id",
                                 'username', "User"."username"
-                            )`), 'User'],
+                            )`), 'user'],
                 [literal(`jsonb_build_object(
                                 'id', "UserReactionOnComment"."id"
-                            )`), 'UserReactionOnComment'],
+                            )`), 'userReactionOnComment'],
                 [literal(`(
                                 SELECT COUNT(*)
                                     FROM "comment-reactions" AS cr
@@ -87,7 +87,8 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
                 as: 'UserReactionOnComment',
                 attributes: ['id'],
                 where: {
-                    userId: (req as any).user.userId
+                    userId: (req as any).user.userId,
+                    isActive: true
                 },
                 required: false
             }
@@ -103,8 +104,8 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
         const totalPages = Math.ceil(totalItems / limit);
 
         const response = comment.map((ele) => {
-            const { id, message, User, UserReactionOnComment, count } = ele as any
-            return { id, message, User, UserReactionOnComment, count }
+            const { id, message, user, userReactionOnComment, count } = ele as any
+            return { id, message, user, userReactionOnComment, count }
         })
 
         return res.status(200).json({
@@ -175,7 +176,7 @@ commentRoute.put('/comment/:id', authMiddleware, async (req: Request, res: Respo
 
         return res.status(200).json({
             message: 'Comment updated successfully',
-            data: { comment }
+            data: comment
         });
     } catch (error) {
         console.error('Error updating Comment:', error);
@@ -215,3 +216,63 @@ commentRoute.delete('/comment/:id', authMiddleware, async (req: Request, res: Re
         });
     }
 });
+
+commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
+    try {
+        const loggedInUserId = (req as any).user.userId;
+        const commentId = req.params.id;
+
+        const comment = await Comment.findOne({
+            where: { id: commentId, isActive: true },
+            attributes: [
+                'id',
+                'message',
+                [literal(`jsonb_build_object(
+                    'id', "User"."id",
+                    'username', "User"."username"
+                )`), 'user'],
+                [literal(`jsonb_build_object(
+                    'id', "UserReactionOnComment"."id"
+                )`), 'userReactionOnComment'],
+                [literal(`(
+                    SELECT COUNT(*)
+                    FROM "comment-reactions" AS cr
+                    WHERE cr."commentId" = "comment"."id" AND cr."isActive" = true
+                )`), 'count'],
+            ],
+            include: [
+                {
+                    model: User,
+                    as: 'User',
+                    attributes: ['id', 'username'],
+                },
+                {
+                    model: CommentReaction,
+                    as: 'UserReactionOnComment',
+                    attributes: ['id'],
+                    required: false,
+                    where: { userId: loggedInUserId, isActive: true },
+                },
+            ],
+            subQuery: false,
+            raw: true,
+        });
+
+        if (!comment) {
+            return res.status(404).json({ message: 'Comment not found' });
+        }
+
+        const { id, message, user, userReactionOnComment, count } = comment as any;
+        return res.status(200).json({
+            message: 'Comment fetched successfully',
+            data: { id, message, user, userReactionOnComment, count },
+        });
+    } catch (error) {
+        console.error('Error fetching single comment:', error);
+        return res.status(500).json({
+            message: 'Internal server error ' + (error as any).message,
+            error,
+        });
+    }
+});
+  
