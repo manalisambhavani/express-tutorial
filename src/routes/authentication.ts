@@ -93,10 +93,7 @@ authRoute.post("/login", async (req: Request, res: Response) => {
         }
 
         const userData = user.toJSON();
-        console.log("🚀 ~ userData:", userData)
-
         const verified = await compare(password, userData.password)
-        console.log("🚀 ~ verified:", verified)
 
         if (!verified) {
             return res.status(401).json({ message: "Authentication Failed" });

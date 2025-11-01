@@ -6,11 +6,12 @@ import { commentRoute } from "./routes/comment";
 import { postReactionRoute } from "./routes/post-reaction";
 import { CommentReactionRoute } from "./routes/comment-reaction";
 import { friendRequestRoute } from "./routes/friend-request";
-
-
+import cors from "cors"
 
 const app = express();
 app.use(express.json());
+
+app.use(cors())
 
 app.use(authRoute)
 app.use(profileRoute)
