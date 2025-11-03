@@ -3,9 +3,9 @@ import Joi from "joi";
 export const SignupInputSchema = Joi.object({
     username: Joi.string()
         .required()
-        .min(8)
+        .min(5)
         .max(14)
-        .pattern(/^[a-z_]+$/),
+        .pattern(/^[a-z0-9_]+$/),
 
     password: Joi.string()
         .required()
