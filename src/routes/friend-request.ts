@@ -293,7 +293,6 @@ friendRequestRoute.put('/unfriend/:id', authMiddleware, async (req: Request, res
     const loggedInUserId = (req as any).user.userId;
     const requestId = req.params.id;
 
-
     try {
 
         const friendRequest = await FriendRequest.findOne({
@@ -313,6 +312,13 @@ friendRequestRoute.put('/unfriend/:id', authMiddleware, async (req: Request, res
             }
         });
 
+        if (!friendRequest) {
+            return res.status(404).json({ message: 'Friend request not found.' });
+        }
+
+        friendRequest.set({ status: 'declined', isActive: false });
+        await friendRequest.save();
+        return res.status(200).json({ message: 'You are unfriend' });
     } catch (error) {
         console.error('Failed to Fetch available requests:', error);
 
