@@ -5,6 +5,7 @@ import { PostReactionInputSchema } from '../validations/post-reaction.validation
 
 export const postReactionRoute = express.Router();
 
+// Add a reaction on a post
 postReactionRoute.post('/reaction/:id', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     const postId = req.params.id;
@@ -119,6 +120,7 @@ postReactionRoute.get('/list-reaction/:id', authMiddleware, async (req: Request,
 
 });
 
+// delete post-reaction
 postReactionRoute.delete('/reaction/:id', authMiddleware, async (req: Request, res: Response) => {
     const reactionId = req.params.id;
 

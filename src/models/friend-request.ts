@@ -27,6 +27,11 @@ export const FriendRequestSchema: { [key: string]: ModelAttributeColumnOptions }
         allowNull: false,
         defaultValue: 'pending'
     },
+    isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+    },
 }
 
 

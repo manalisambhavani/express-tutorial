@@ -18,7 +18,12 @@ profileRoute.get("/profile", authMiddleware, async (req: Request, res: Response)
 
         return res.status(200).json({
             message: 'Profile fetched successfully',
-            data: { username: userData.username },
+            data: {
+                username: userData.username,
+                firstName: userData.firstName,
+                lastName: userData.lastName,
+                email: userData.email
+            },
         });
     } catch (error) {
         console.error('Error fetching Profile:', error);

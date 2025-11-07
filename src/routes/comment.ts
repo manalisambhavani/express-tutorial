@@ -7,6 +7,7 @@ import { literal } from 'sequelize';
 
 export const commentRoute = express.Router();
 
+// Add a comment
 commentRoute.post('/comment', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     let parsedBody: { message: string; postId: number };
@@ -43,6 +44,7 @@ commentRoute.post('/comment', authMiddleware, async (req: Request, res: Response
     }
 });
 
+// list comment
 commentRoute.get('/post/:id/comment', authMiddleware, async (req: Request, res: Response) => {
     try {
         const postId = req.params.id;
@@ -131,7 +133,7 @@ commentRoute.get('/post/:id/comment', authMiddleware, async (req: Request, res: 
     }
 })
 
-
+// Update the comment
 commentRoute.put('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
     const commentId = req.params.id;
     const loggedInUserId = (req as any).user.userId;
@@ -188,6 +190,7 @@ commentRoute.put('/comment/:id', authMiddleware, async (req: Request, res: Respo
     }
 });
 
+// Delete the comment
 commentRoute.delete('/comment/:id', authMiddleware, async (req: Request, res: Response) => {
     const commentId = req.params.id;
     const loggedInUserId = (req as any).user.userId;
@@ -275,4 +278,3 @@ commentRoute.get('/comment/:id', authMiddleware, async (req: Request, res: Respo
         });
     }
 });
-  

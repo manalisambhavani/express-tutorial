@@ -6,6 +6,7 @@ import { literal, Sequelize } from 'sequelize';
 
 export const postRoute = express.Router();
 
+// Create Post
 postRoute.post('/post', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     let parsedBody: { title: string; description: string; };
@@ -43,6 +44,7 @@ postRoute.post('/post', authMiddleware, async (req: Request, res: Response) => {
     }
 });
 
+// Fetching the posts
 postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
     try {
         const loggedInUserId = (req as any).user.userId
@@ -132,6 +134,7 @@ postRoute.get('/post', authMiddleware, async (req: Request, res: Response) => {
     }
 })
 
+// Update the post 
 postRoute.put('/post/:id', authMiddleware, async (req: Request, res: Response) => {
     const postId = req.params.id;
     let parsedBody: { title: string; description: string; };
@@ -178,6 +181,7 @@ postRoute.put('/post/:id', authMiddleware, async (req: Request, res: Response) =
     }
 });
 
+// Delete the post
 postRoute.delete('/post/:id', authMiddleware, async (req: Request, res: Response) => {
     const postId = req.params.id;
 
@@ -271,4 +275,3 @@ postRoute.get('/post/:id', authMiddleware, async (req: Request, res: Response) =
         });
     }
 });
-  

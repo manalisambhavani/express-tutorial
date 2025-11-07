@@ -21,7 +21,7 @@ friendRequestRoute.get('/list-users', authMiddleware, async (req: Request, res: 
         });
 
         const excludedIds = []
-        sentRequests.forEach((r) => { 
+        sentRequests.forEach((r) => {
             excludedIds.push(r.toJSON().receiverId);
             excludedIds.push(r.toJSON().senderId);
         });
@@ -36,7 +36,12 @@ friendRequestRoute.get('/list-users', authMiddleware, async (req: Request, res: 
             attributes: ['id', 'username', 'email'], // limit columns if needed
         });
 
-        res.json({ data: users });
+        return res.status(200).json({
+            message: 'User fetched successfully',
+            data: {
+                users
+            }
+        });
 
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -48,6 +53,7 @@ friendRequestRoute.get('/list-users', authMiddleware, async (req: Request, res: 
     }
 })
 
+// Show particular user profile
 friendRequestRoute.get('/user/:id', authMiddleware, async (req: Request, res: Response) => {
     const userId = req.params.id;
 
@@ -55,6 +61,7 @@ friendRequestRoute.get('/user/:id', authMiddleware, async (req: Request, res: Re
         const UserProfile = await User.findOne({
             where: {
                 id: userId,
+                isActive: true
             }
         });
         if (!UserProfile) {
@@ -67,13 +74,16 @@ friendRequestRoute.get('/user/:id', authMiddleware, async (req: Request, res: Re
             message: 'User fetched successfully',
             data: {
                 id: UserProfile1.id,
-                username: UserProfile1.username
+                username: UserProfile1.username,
+                firstName: UserProfile1.firstName,
+                lastName: UserProfile1.lastName,
+                email: UserProfile1.email
             }
         });
 
 
     } catch (error) {
-        console.error('Error updating post:', error);
+        console.error('Error fetching User:', error);
 
         return res.status(500).json({
             message: 'Internal server error' + (error as any).message,
@@ -96,7 +106,8 @@ friendRequestRoute.post('/send-friend-request/:id', authMiddleware, async (req: 
                     { senderId, receiverId },
                     { senderId: receiverId, receiverId: senderId }
                 ],
-                status: 'pending'
+                status: 'pending',
+                isActive: true
             }
         });
 
@@ -131,7 +142,8 @@ friendRequestRoute.get('/friend-request', authMiddleware, async (req: Request, r
         const receivedRequests = await FriendRequest.findAll({
             where: {
                 receiverId: userId,
-                status: 'pending'
+                status: 'pending',
+                isActive: true
             },
             include: [
                 {
@@ -142,7 +154,7 @@ friendRequestRoute.get('/friend-request', authMiddleware, async (req: Request, r
         });
 
         res.status(200).json({
-            message: 'Pending friend request fetched successfully',
+            message: 'friend request fetched successfully',
             data: receivedRequests
         });
 
@@ -169,7 +181,14 @@ friendRequestRoute.patch('/friend-request/:id', authMiddleware, async (req: Requ
         }
 
         // Find the friend request
-        const friendRequest = await FriendRequest.findByPk(requestId);
+        // const friendRequest = await FriendRequest.findByPk(requestId);
+
+        const friendRequest = await FriendRequest.findOne({
+            where: {
+                id: requestId,
+                isActive: true
+            }
+        })
 
         if (!friendRequest) {
             return res.status(404).json({ message: 'Friend request not found.' });
@@ -184,7 +203,8 @@ friendRequestRoute.patch('/friend-request/:id', authMiddleware, async (req: Requ
 
         //delete record from friend-request table who's friendship request is deleted
         if (status == 'declined') {
-            await friendRequest.destroy();
+            friendRequest.set({ status, isActive: false });
+            await friendRequest.save();
             return res.status(200).json({ message: 'friend request is deleted successfully' });
         }
 
@@ -217,18 +237,21 @@ friendRequestRoute.get('/friends', authMiddleware, async (req: Request, res: Res
         const friends = await FriendRequest.findAll({
             where: {
                 status: 'accepted',
+                isActive: true,
                 [Op.or]: [
                     { senderId: loggedInUserId },
                     { receiverId: loggedInUserId }
-                ]
+                ],
             },
             include: [{
                 model: User,
                 as: "sender",
+                attributes: ['id', 'username']
             },
             {
                 model: User,
                 as: "receiver",
+                attributes: ['id', 'username']
             }]
         });
 
@@ -276,6 +299,7 @@ friendRequestRoute.put('/unfriend/:id', authMiddleware, async (req: Request, res
         const friendRequest = await FriendRequest.findOne({
             where: {
                 status: "accepted",
+                isActive: true,
                 [Op.or]: [
                     {
                         senderId: loggedInUserId,
